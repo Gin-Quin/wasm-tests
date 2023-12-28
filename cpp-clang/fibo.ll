@@ -3,37 +3,30 @@ source_filename = "./fibo.cpp"
 target datalayout = "e-m:e-p:32:32-p10:8:8-p20:8:8-i64:64-n32:64-S128-ni:1:10:20"
 target triple = "wasm32"
 
-; Function Attrs: noinline optnone
-define hidden i32 @fibo(i32 noundef %0) #0 {
-  %2 = alloca i32, align 4
-  %3 = alloca i32, align 4
-  store i32 %0, ptr %3, align 4
-  %4 = load i32, ptr %3, align 4
-  %5 = icmp sle i32 %4, 1
-  br i1 %5, label %6, label %8
+; Function Attrs: nofree nosync nounwind optsize readnone
+define hidden i32 @fibo(i32 noundef %0) local_unnamed_addr #0 {
+  %2 = icmp slt i32 %0, 2
+  br i1 %2, label %11, label %3
 
-6:                                                ; preds = %1
-  %7 = load i32, ptr %3, align 4
-  store i32 %7, ptr %2, align 4
-  br label %16
+3:                                                ; preds = %1, %3
+  %4 = phi i32 [ %8, %3 ], [ %0, %1 ]
+  %5 = phi i32 [ %9, %3 ], [ 0, %1 ]
+  %6 = add nsw i32 %4, -1
+  %7 = tail call i32 @fibo(i32 noundef %6) #1
+  %8 = add nsw i32 %4, -2
+  %9 = add nsw i32 %7, %5
+  %10 = icmp ult i32 %4, 4
+  br i1 %10, label %11, label %3
 
-8:                                                ; preds = %1
-  %9 = load i32, ptr %3, align 4
-  %10 = sub nsw i32 %9, 1
-  %11 = call i32 @fibo(i32 noundef %10)
-  %12 = load i32, ptr %3, align 4
-  %13 = sub nsw i32 %12, 2
-  %14 = call i32 @fibo(i32 noundef %13)
-  %15 = add nsw i32 %11, %14
-  store i32 %15, ptr %2, align 4
-  br label %16
-
-16:                                               ; preds = %8, %6
-  %17 = load i32, ptr %2, align 4
-  ret i32 %17
+11:                                               ; preds = %3, %1
+  %12 = phi i32 [ 0, %1 ], [ %9, %3 ]
+  %13 = phi i32 [ %0, %1 ], [ %8, %3 ]
+  %14 = add nsw i32 %13, %12
+  ret i32 %14
 }
 
-attributes #0 = { noinline optnone "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }
+attributes #0 = { nofree nosync nounwind optsize readnone "frame-pointer"="none" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" }
+attributes #1 = { optsize }
 
 !llvm.module.flags = !{!0}
 !llvm.ident = !{!1}

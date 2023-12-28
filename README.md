@@ -1,6 +1,67 @@
-Comparing Rust, TinyGo, Zig and C/C++ compilers for creating simple wasm functions (like Fibonacci).
+# Testing Wasm Fibonacci with some different languages
 
-## Simplicity
+Comparing Rust, TinyGo, Zig and C/C++ compilers for creating a simple Fibonacci function in wasm.
+
+## Results
+
+<table>
+  <tr>
+    <th></th>
+    <th>Native JS</th>
+    <th>Zig</th>
+    <th>Rust</th>
+    <th>C / C++</th>
+    <th>Tinygo</th>
+  </tr>
+
+  <tr>
+    <th>Size</th>
+    <td>57 bytes</td>
+    <td>110 bytes</td>
+    <td>222 bytes</td>
+    <td>514 bytes</td>
+    <td>86.000 bytes</td>
+  </tr>
+    
+  <tr>
+    <th><i>(Bun)</i> Speed</th>
+    <td>665 ms</td>
+    <td>410 ms</td>
+    <td>550 ms</td>
+    <td>414 ms</td>
+    <td>*</td>
+  </tr>
+
+  <tr>
+    <th><i>(Deno)</i> Speed</th>
+    <td>1.351 ms</td>
+    <td>432 ms</td>
+    <td>453 ms</td>
+    <td>455 ms</td>
+    <td>*</td>
+  </tr>
+
+  <tr>
+    <th><i>(Node)</i> Speed</th>
+    <td>1.464 ms</td>
+    <td>745 ms</td>
+    <td>758 ms</td>
+    <td>714 ms</td>
+    <td>*</td>
+  </tr>
+</table>
+
+\* It's not possible to create a library of Wasm functions with TinyGo, only executables.
+
+## Synthesis
+
+- Bun is naturally faster than Bun and Node for executing Fibonacci. This is likely due to the runtime difference, V8 seems not as fast for handling numbers.
+- Node is significantly slower than Bun and Deno to run a Wasm function. Another good reason to drop Node for newer alternatives.
+- Zig produces a very small output. Twice as small as Rust's Wasm, and almost 5x as small as C/C++ Wasm.
+- Tinygo produces a huge output and is not actually usable as a library. It's the drawback of having a garbage collector language: you have to load the garbage collector code in the Wasm file.
+
+
+## Note about simplicity
 
 - Zig: 1 (winner)
 - TinyGo: 2
@@ -13,25 +74,36 @@ Rust is much more complicated. A lot of different (and heavy tools to install). 
 
 TinyGo is very simple to use with WASI, but you can't use it for a pure WASM library.
 
-C++ is not so easy, but it's achievable once you've got the right option.
+C++ is not so easy, but it's achievable once you've got the right option. 
 
-## Output quality
+### Commands used to compile to wasm
 
-- Zig: 1 (winner)
-- Rust: 1
-- C/C++: 2
-- TinyGo: 5
+#### Zig
 
-Rust and Zig have a very clean output with the right options. Again it's more complex to find how to use this options with Rust. With Zig, it's a simple tag.
+```sh
+zig build-lib fibo.zig -target wasm32-freestanding -dynamic -rdynamic -O ReleaseSmall
+```
 
-They are the only ones that produced a WASM output faster than native JS. This means they are the only one that make sense to use WASM with!
+`-dynamic` and `-rdynamic` are used to make all exported functions available in the Wasm file.
 
-C/C++ have a small overhead that makes the difference. For a Fibonacci test, the C/C++ wasm function is 2x slower than the native JS function, while the Zig wasm function is 40% faster using Bun (3x faster using Deno, but because the JS function is very slow).
+#### Rust
 
-It must be even worse with TinyGo.
+```sh
+wasm-pack build --target web
+```
 
-# Conclusion
+#### C / C++
 
-If you want to produce Wasm, only use Zig or Rust.
+```sh
+clang++ --target=wasm32 -emit-llvm -Os -c -S -o ./fibo.ll ./fibo.cpp
+llc -march=wasm32 -filetype=obj -o ./fibo.o ./fibo.ll
+wasm-ld --no-entry --export-all -o ./fibo.wasm ./fibo.o
+```
 
-C/C++, Go and Tinygo wasm outputs are slower than native JS, so there is not point in using it. Well-made JS may be faster.
+Note: don't forget the `-Os` option (optimize speed) that will also optimize execution speed.
+
+## Conclusion
+
+If you want to produce small and efficient Wasm, use Zig, Rust or optimized C/C++.
+
+**Never use a garbage collected language** like Go or C#. Your code will be much larger to load, and might we as well slower than native JS.
